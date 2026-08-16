@@ -1,4 +1,12 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+// API configuration - works on both web and mobile (APK)
+import { Capacitor } from '@capacitor/core'
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://your-backend-url.com/api'
+
+// Detect if running as native app
+export const isNative = Capacitor.isNativePlatform()
+
+export { API_BASE }
 
 /**
  * Upload files to the backend

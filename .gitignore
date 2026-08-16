@@ -1,6 +1,10 @@
+# Android build artifacts
+frontend/android/
+frontend/dist/
 node_modules/
 uploads/
-dist/
 .env
 *.log
 .DS_Store
+*.apk
+*.keystore

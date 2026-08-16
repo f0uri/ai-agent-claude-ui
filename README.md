@@ -2,7 +2,7 @@
 
 مساعد ذكي بواجهة مشابهة لـ Claude، يدعم جميع أنواع الملفات.
 
-![AI Agent](https://img.shields.io/badge/AI-Agent-d97757) ![React](https://img.shields.io/badge/React-18-blue) ![Node](https://img.shields.io/badge/Node-20-green)
+![AI Agent](https://img.shields.io/badge/AI-Agent-d97757) ![React](https://img.shields.io/badge/React-18-blue) ![Node](https://img.shields.io/badge/Node-20-green) ![Android](https://img.shields.io/badge/APK-Android-3DDC84)
 
 ## ✨ المميزات
 
@@ -12,13 +12,13 @@
 - 🔄 **ردود متدفقة** — ظهور النص تدريجياً مثل Claude
 - 📝 **دعم Markdown** — كود ملوّن، جداول، قوائم، روابط
 - 🐳 **Docker Ready** — تشغيل سريع بـ Docker
+- 📱 **Android APK** — تطبيق Android أصلي عبر Capacitor
 - 🔌 **OpenAI متكامل** — استخدم GPT-4o أو أي نموذج
 
-## 🚀 التشغيل السريع
+## 🚀 التشغيل السريع (Web)
 
 ### المتطلبات
 - Node.js 20+
-- npm أو yarn
 
 ### 1️⃣ تثبيت الحزم
 ```bash
@@ -42,21 +42,79 @@ npm run dev
 
 ### 🐳 التشغيل بـ Docker
 ```bash
-# أضف مفتاح OpenAI
 export OPENAI_API_KEY=your-key-here
-
-# شغّل
-docker-compose up --build
-
-# أو بدون OpenAI (وضع تجريبي)
 docker-compose up --build
 ```
+
+## 📱 بناء APK (Android)
+
+### الطريقة الأولى: GitHub Actions (تلقائي) ⭐
+
+1. اذهب إلى: https://github.com/f0uri/ai-agent-claude-ui/actions
+2. سيُبنى الـ APK تلقائياً مع كل push
+3. حمّل الـ APK من Artifacts
+4. ثبّته على هاتفك
+
+> **مهم:** قبل البناء، أضف متغير `API_URL` في Settings → Secrets and variables → Actions
+> pointing to your deployed backend URL.
+
+### الطريقة الثانية: بناء محلي
+
+```bash
+# المتطلبات: Android SDK + Java 17
+cd frontend
+npm install
+npm run build
+
+# إضافة منصة Android
+npx cap add android
+npx cap sync android
+
+# بناء APK
+cd android
+./gradlew assembleDebug
+
+# APK سيكون في:
+# android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+### الطريقة الثالثة: Docker + Android
+```bash
+# بناء الـ backend
+docker-compose up -d
+
+# بناء الـ APK
+cd frontend
+npm run apk:build
+```
+
+### تثبيت APK على الهاتف
+```bash
+# انسخ الـ APK لهاتفك
+adb install app/build/outputs/apk/debug/app-debug.apk
+
+# أو انسخه يدوياً وثبّته
+```
+
+## 🔧 إعداد الـ Backend للـ APK
+
+يجب أن يكون الـ Backend على خادم عام (وليس localhost) لكي يعمل التطبيق على الهاتف.
+
+### خيارات النشر:
+1. **Render.com** — مجاني وسهل
+2. **Railway.app** — مجاني للاستخدام الأول
+3. **Fly.io** — يدعم Docker
+4. **VPS** — استخدم Docker
+
+بعد النشر، حدّث `VITE_API_URL` في:
+- `frontend/.env` للبناء المحلي
+- GitHub Secrets → `API_URL` للبناء التلقائي
 
 ## 📂 أنواع الملفات المدعومة
 
 | الفئة | الصيغ |
 |-------|-------|
-| 🖼️ الصور | PNG, JPG, JPEG, GIF, WebP, SVG, BMP, ICO |
+| 🖼️ الصور | PNG, JPG, JPEG, GIF, WebP, SVG, BMP |
 | 📄 المستندات | PDF, DOC, DOCX, TXT, RTF, ODT |
 | 📊 الجداول | XLS, XLSX, CSV, ODS |
 | 📽️ العروض | PPT, PPTX, ODP |
@@ -69,42 +127,30 @@ docker-compose up --build
 
 ```
 ai-agent-claude-ui/
-├── frontend/          # React + Vite + Tailwind CSS
+├── .github/workflows/
+│   └── build-apk.yml            # GitHub Actions لبناء APK تلقائياً
+├── frontend/                    # React + Vite + Tailwind CSS
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── Sidebar.jsx       # قائمة المحادثات
-│   │   │   ├── TopBar.jsx        # الشريط العلوي
-│   │   │   ├── ChatArea.jsx      # منطقة المحادثة
-│   │   │   ├── Message.jsx       # عرض الرسائل + Markdown
-│   │   │   └── MessageInput.jsx  # إدخال + رفع ملفات
-│   │   ├── utils/
-│   │   │   └── api.js            # اتصال بالخادم
+│   │   ├── components/           # مكونات الواجهة
+│   │   ├── mobile/               # Capacitor mobile hooks
+│   │   ├── utils/                # API client
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   ├── index.html
+│   ├── public/                  # أيقونات
+│   ├── capacitor.config.ts      # إعدادات Capacitor (Android)
+│   ├── vite.config.js
 │   └── package.json
-├── backend/           # Node.js + Express
+├── backend/                     # Node.js + Express
 │   ├── routes/
 │   │   └── chat.js              # معالجة الرسائل + OpenAI
 │   ├── utils/
 │   │   └── fileProcessor.js     # معالجة الملفات
-│   ├── server.js                # الخادم الرئيسي
+│   ├── server.js
 │   └── package.json
 ├── Dockerfile
 ├── docker-compose.yml
 └── package.json
 ```
-
-## 🔧 الإعدادات
-
-### متغيرات البيئة (backend/.env)
-| المتغير | الوصف | الافتراضي |
-|---------|-------|-----------|
-| `PORT` | منفذ الخادم | 3001 |
-| `OPENAI_API_KEY` | مفتح OpenAI API | - |
-| `OPENAI_MODEL` | النموذج المستخدم | gpt-4o |
-| `MAX_FILE_SIZE` | أقصى حجم ملف | 50MB |
-| `CORS_ORIGIN` | النطاق المسموح | * |
 
 ## 📝 الترخيص
 
