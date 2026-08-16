@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-arabic: 'Cairo', sans-serif;
+  --font-latin: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-arabic), var(--font-latin);
+  background-color: #1a1a1a;
+  color: #ececec;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3d3d3d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4d4d4d;
+}
+
+/* Light mode */
+.light body {
+  background-color: #f9f9f9;
+  color: #1a1a1a;
+}
+
+/* Markdown content styling */
+.markdown-body {
+  line-height: 1.7;
+  word-wrap: break-word;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  font-weight: 600;
+  margin-top: 1.2em;
+  margin-bottom: 0.6em;
+}
+
+.markdown-body h1 { font-size: 1.5em; }
+.markdown-body h2 { font-size: 1.3em; }
+.markdown-body h3 { font-size: 1.1em; }
+
+.markdown-body p {
+  margin-bottom: 0.8em;
+}
+
+.markdown-body ul, .markdown-body ol {
+  margin-bottom: 0.8em;
+  padding-right: 1.5em;
+}
+
+.markdown-body li {
+  margin-bottom: 0.3em;
+}
+
+.markdown-body code:not(pre code) {
+  background-color: rgba(217, 119, 87, 0.15);
+  color: #d97757;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'Courier New', monospace;
+}
+
+.markdown-body pre {
+  background-color: #1a1a1a;
+  border: 1px solid #3d3d3d;
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 0.8em 0;
+  direction: ltr;
+}
+
+.markdown-body pre code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-body a {
+  color: #d97757;
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body blockquote {
+  border-right: 3px solid #d97757;
+  padding-right: 1em;
+  margin: 0.8em 0;
+  color: #a0a0a0;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 0.8em 0;
+  width: 100%;
+}
+
+.markdown-body th, .markdown-body td {
+  border: 1px solid #3d3d3d;
+  padding: 0.5em 0.8em;
+}
+
+.markdown-body th {
+  background-color: #262626;
+  font-weight: 600;
+}
+
+/* Typing indicator */
+.typing-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #d97757;
+  margin: 0 2px;
+}
+
+/* File upload area */
+.dropzone {
+  border: 2px dashed #3d3d3d;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.dropzone-active {
+  border-color: #d97757;
+  background-color: rgba(217, 119, 87, 0.05);
+}
+
+/* Smooth transitions */
+.transition-all-smooth {
+  transition: all 0.3s ease;
+}
+
+/* Chat message animation */
+.message-enter {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Auto-resize textarea */
+.auto-resize {
+  field-sizing: content;
+  min-height: 24px;
+  max-height: 200px;
+}
