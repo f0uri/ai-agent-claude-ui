@@ -67,9 +67,10 @@ export async function processChat({ message, fileContents, history }) {
   messages.push({ role: 'user', content: userContent })
 
   try {
-    // Check if API key is configured
+    // Check if API key is configured. If not, use a free no-key AI fallback
+    // before returning the local offline response.
     if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
-      return generateOfflineResponse(message, fileContents)
+      return await generateFreeAIResponse(messages, message, fileContents)
     }
 
     const completion = await openai.chat.completions.create({
@@ -83,13 +84,50 @@ export async function processChat({ message, fileContents, history }) {
   } catch (error) {
     console.error('OpenAI API error:', error.message)
 
-    // Fallback to offline response
-    return generateOfflineResponse(message, fileContents, error.message)
+    // Fallback to free public AI, then offline response
+    return await generateFreeAIResponse(messages, message, fileContents, error.message)
   }
 }
 
 /**
- * Generate a response when OpenAI API is not available
+ * Try a free/no-key public AI endpoint. This keeps the app useful when no
+ * OpenAI key is configured. It is best-effort, so the offline response remains
+ * the final fallback when the public service is busy or unreachable.
+ */
+async function generateFreeAIResponse(messages, message, fileContents, previousError) {
+  const model = process.env.POLLINATIONS_MODEL || 'openai'
+  const prompt = messages
+    .map((msg) => `${msg.role === 'system' ? 'System' : msg.role === 'user' ? 'User' : 'Assistant'}:\n${msg.content}`)
+    .join('\n\n')
+
+  try {
+    const url = new URL(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`)
+    url.searchParams.set('model', model)
+    url.searchParams.set('private', 'true')
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'text/plain' },
+      signal: AbortSignal.timeout(30000),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Pollinations HTTP ${response.status}`)
+    }
+
+    const text = (await response.text()).trim()
+    if (!text) throw new Error('Pollinations returned empty response')
+    return text
+  } catch (error) {
+    const combinedError = previousError
+      ? `${previousError}; free fallback: ${error.message}`
+      : `free fallback: ${error.message}`
+    return generateOfflineResponse(message, fileContents, combinedError)
+  }
+}
+
+/**
+ * Generate a response when remote AI is not available
  */
 function generateOfflineResponse(message, fileContents, errorMsg) {
   let response = ''
@@ -112,26 +150,21 @@ function generateOfflineResponse(message, fileContents, errorMsg) {
   }
 
   if (errorMsg) {
-    response += `> ⚠️ خطأ في الاتصال بـ API: ${errorMsg}\n\n`
+    response += `> ℹ️ تعذر الوصول مؤقتاً إلى مزود الذكاء المجاني: ${errorMsg}\n\n`
   }
 
-  response += `## رد تجريبي\n\n`
+  response += `## رد محلي احتياطي\n\n`
   response += `استلمت رسالتك: "${message?.slice(0, 100) || ''}"\n\n`
 
   if (fileContents && fileContents.length > 0) {
     response += `واستلمت ${fileContents.length} ملف مرفق.\n\n`
   }
 
-  response += `### للتشغيل الكامل:\n\n`
-  response += `1. أضف مفتاح OpenAI API في \`backend/.env\`:\n`
-  response += '```bash\n'
-  response += 'OPENAI_API_KEY=sk-your-key-here\n'
-  response += '```\n\n'
-  response += `2. أعد تشغيل الخادم:\n`
-  response += '```bash\n'
-  response += 'npm run dev\n'
-  response += '```\n\n'
-  response += `أنا أعمل الآن في الوضع التجريبي — أقدر أستقبل الرسائل والملفات لكن ردودي محدودة.`
+  response += `### طريقة العمل الآن:\n\n`
+  response += `- أحاول أولاً استخدام خادم التطبيق إن كان متاحاً.\n`
+  response += `- إذا لم يوجد مفتاح OpenAI، أحاول استخدام مزود مجاني بدون مفتاح.\n`
+  response += `- إذا كان الاتصال الخارجي مزدحماً أو محجوباً، أرجع هذا الرد المحلي حتى لا يتوقف التطبيق.\n\n`
+  response += `لأفضل جودة يمكنك لاحقاً إضافة \`OPENAI_API_KEY\` أو ربط \`VITE_API_URL\` بخادم عام، لكن التطبيق لن يتعطل بدونها.`
 
   return response
 }

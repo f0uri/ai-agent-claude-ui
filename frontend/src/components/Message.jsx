@@ -2,28 +2,28 @@ import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import remarkGfm from 'remark-gfm'
-import { User, Sparkles, Copy, Check, RefreshCw } from 'lucide-react'
+import { User, Sparkles, Copy, Check, RefreshCw, FileText } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
 
 function CodeBlock({ language, value }) {
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value)
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
   return (
-    <div className="relative group my-3">
-      <div className="flex items-center justify-between bg-[#1a1a1a] text-xs text-gray-400 px-4 py-1.5 rounded-t-lg border border-claude-border">
+    <div className="relative my-3 overflow-hidden rounded-2xl border border-black/10 bg-[#171412] shadow-sm dark:border-white/[0.10]">
+      <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-[#d8cec5]">
         <span className="font-mono">{language || 'code'}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 hover:text-claude-accent transition-colors"
+          className="flex items-center gap-1 rounded-full px-2 py-1 transition-colors hover:bg-white/10 hover:text-white"
         >
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? 'تم النسخ' : 'نسخ'}
         </button>
       </div>
@@ -32,10 +32,12 @@ function CodeBlock({ language, value }) {
         style={oneDark}
         customStyle={{
           margin: 0,
-          borderRadius: '0 0 8px 8px',
+          borderRadius: 0,
           fontSize: '13px',
           direction: 'ltr',
           textAlign: 'left',
+          background: '#171412',
+          padding: '16px',
         }}
       >
         {value}
@@ -48,31 +50,32 @@ export default function Message({ message, isLast, onRegenerate }) {
   const [copied, setCopied] = useState(false)
   const isUser = message.role === 'user'
 
-  const handleCopyAll = () => {
-    navigator.clipboard.writeText(message.content)
+  const handleCopyAll = async () => {
+    await navigator.clipboard.writeText(message.content || '')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Render file attachments for user messages
   const fileAttachments = message.files?.length > 0 ? (
-    <div className="flex flex-wrap gap-2 mt-2">
+    <div className={clsx('mt-2 flex flex-wrap gap-2', isUser ? 'justify-end' : 'justify-start')}>
       {message.files.map((file, i) => {
         const isImage = file.type?.startsWith('image/')
         return (
-          <div key={i} className="flex items-center gap-2 bg-claude-surface2 dark:bg-claude-surface2 light:bg-light-surface2 rounded-lg px-3 py-1.5">
+          <div
+            key={`${file.name}-${i}`}
+            className="flex max-w-[220px] items-center gap-2 rounded-2xl border border-black/5 bg-white/[0.55] px-3 py-2 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.07]"
+          >
             {isImage && file.url ? (
-              <img src={file.url} alt={file.name} className="w-6 h-6 rounded object-cover" />
+              <img src={file.url} alt={file.name} className="h-9 w-9 rounded-xl object-cover" />
             ) : (
-              <div className="w-6 h-6 rounded bg-claude-accent/15 flex items-center justify-center">
-                <span className="text-[10px] text-claude-accent font-mono">
-                  {(file.name || '').split('.').pop()?.toUpperCase().slice(0, 3) || 'FILE'}
-                </span>
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#d97757]/[0.12] text-[#d97757]">
+                <FileText className="h-4 w-4" />
               </div>
             )}
-            <span className="text-xs text-claude-textMuted max-w-32 truncate">
-              {file.name}
-            </span>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-[#3a312b] dark:text-[#f2e9df]">{file.name}</p>
+              <p className="text-[10px] text-[#8f8175] dark:text-[#aea39b]">{file.type || 'ملف'}</p>
+            </div>
           </div>
         )
       })}
@@ -80,38 +83,34 @@ export default function Message({ message, isLast, onRegenerate }) {
   ) : null
 
   return (
-    <div className="message-enter w-full">
-      <div className={clsx(
-        'flex gap-3 px-4 md:px-6 py-4 max-w-4xl mx-auto',
-        isUser ? 'flex-row-reverse' : 'flex-row'
-      )}>
-        {/* Avatar */}
+    <div className={clsx('message-enter group flex w-full py-3', isUser ? 'justify-end' : 'justify-start')}>
+      <div className={clsx('flex max-w-[92%] gap-3 md:max-w-[82%]', isUser ? 'flex-row-reverse' : 'flex-row')}>
         <div className={clsx(
-          'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
+          'mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-2xl shadow-sm',
           isUser
-            ? 'bg-claude-surface2 dark:bg-claude-surface2 light:bg-light-surface2'
-            : 'bg-claude-accent'
+            ? 'bg-[#2c2723] text-white dark:bg-[#f2e9df] dark:text-[#2c2723]'
+            : 'bg-gradient-to-br from-[#efad8e] to-[#c45f42] text-white shadow-[#d97757]/20'
         )}>
-          {isUser ? (
-            <User className="w-5 h-5 text-claude-textMuted" />
-          ) : (
-            <Sparkles className="w-5 h-5 text-white" />
-          )}
+          {isUser ? <User className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
         </div>
 
-        {/* Message content */}
-        <div className={clsx('flex-1 min-w-0', isUser && 'flex flex-col items-end')}>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-claude-textMuted">
+        <div className={clsx('min-w-0 flex-1', isUser && 'flex flex-col items-end')}>
+          <div className={clsx('mb-1 flex items-center gap-2 px-1', isUser && 'flex-row-reverse')}>
+            <span className="text-[11px] font-bold text-[#8f8175] dark:text-[#aea39b]">
               {isUser ? 'أنت' : 'AI Agent'}
             </span>
+            {message.timestamp && (
+              <span className="text-[10px] text-[#a79a8e] dark:text-[#81766d]">
+                {new Date(message.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
 
           <div className={clsx(
-            'rounded-2xl px-4 py-3 max-w-full',
+            'overflow-hidden rounded-[26px] px-4 py-3 text-sm leading-7 shadow-sm backdrop-blur-xl md:text-[15px]',
             isUser
-              ? 'bg-claude-user dark:bg-claude-user light:bg-light-surface2 text-claude-text dark:text-claude-text light:text-light-text rounded-tr-sm'
-              : 'bg-claude-assistant dark:bg-claude-assistant light:bg-light-surface text-claude-text dark:text-claude-text light:text-light-text rounded-tl-sm border border-claude-border dark:border-claude-border light:border-light-border'
+              ? 'rounded-tr-md bg-[#2c2723] text-white shadow-black/10 dark:bg-[#f2e9df] dark:text-[#2c2723]'
+              : 'rounded-tl-md border border-black/5 bg-white/70 text-[#2c2723] dark:border-white/[0.08] dark:bg-white/[0.07] dark:text-[#f4eee8]'
           )}>
             {message.content ? (
               <div className="markdown-body">
@@ -141,33 +140,32 @@ export default function Message({ message, isLast, onRegenerate }) {
                 </ReactMarkdown>
               </div>
             ) : (
-              <div className="flex items-center gap-1 py-1">
-                <span className="typing-dot animate-typing" style={{ animationDelay: '0s' }}></span>
-                <span className="typing-dot animate-typing" style={{ animationDelay: '0.2s' }}></span>
-                <span className="typing-dot animate-typing" style={{ animationDelay: '0.4s' }}></span>
+              <div className="flex items-center gap-1 py-1.5">
+                <span className="typing-dot animate-typing" style={{ animationDelay: '0s' }} />
+                <span className="typing-dot animate-typing" style={{ animationDelay: '0.2s' }} />
+                <span className="typing-dot animate-typing" style={{ animationDelay: '0.4s' }} />
               </div>
             )}
           </div>
 
           {fileAttachments}
 
-          {/* Action buttons for assistant messages */}
           {!isUser && message.content && (
-            <div className="flex items-center gap-1 mt-1.5 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+            <div className="mt-2 flex items-center gap-1 px-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
               <button
                 onClick={handleCopyAll}
-                className="p-1.5 rounded-lg hover:bg-claude-surface2 dark:hover:bg-claude-surface2 light:hover:bg-light-surface2 text-claude-textMuted hover:text-claude-text transition-all-smooth"
+                className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.04] text-[#8f8175] transition-all hover:bg-black/[0.08] hover:text-[#2c2723] dark:bg-white/[0.06] dark:text-[#aea39b] dark:hover:bg-white/[0.1] dark:hover:text-white"
                 title="نسخ"
               >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               </button>
               {isLast && onRegenerate && (
                 <button
                   onClick={onRegenerate}
-                  className="p-1.5 rounded-lg hover:bg-claude-surface2 dark:hover:bg-claude-surface2 light:hover:bg-light-surface2 text-claude-textMuted hover:text-claude-text transition-all-smooth"
+                  className="grid h-8 w-8 place-items-center rounded-full bg-black/[0.04] text-[#8f8175] transition-all hover:bg-black/[0.08] hover:text-[#2c2723] dark:bg-white/[0.06] dark:text-[#aea39b] dark:hover:bg-white/[0.1] dark:hover:text-white"
                   title="إعادة توليد"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>

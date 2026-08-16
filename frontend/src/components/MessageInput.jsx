@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, File as FileIcon, X, Image as ImageIcon, FileText, FileCode, FileArchive, FileSpreadsheet, Presentation } from 'lucide-react'
+import { ArrowUp, File as FileIcon, X, Image as ImageIcon, FileText, FileCode, FileArchive, FileSpreadsheet, Presentation, Paperclip, Plus } from 'lucide-react'
 import clsx from 'clsx'
 
 const FILE_ICONS = {
@@ -28,11 +28,47 @@ function getFileIcon(fileType) {
   return FileIcon
 }
 
-function formatFileSize(bytes) {
+function formatFileSize(bytes = 0) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}
+
+function FilePreview({ file, onRemove }) {
+  const [previewUrl, setPreviewUrl] = useState('')
+  const Icon = getFileIcon(file.type)
+  const isImage = file.type?.startsWith('image/')
+
+  useEffect(() => {
+    if (!isImage || !(file instanceof File)) return undefined
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file, isImage])
+
+  return (
+    <div className="relative flex max-w-[240px] items-center gap-2 rounded-2xl border border-black/5 bg-white/70 py-2 pl-2 pr-3 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.07]">
+      {isImage && previewUrl ? (
+        <img src={previewUrl} alt={file.name} className="h-10 w-10 rounded-xl object-cover" />
+      ) : (
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#d97757]/[0.12] text-[#d97757]">
+          <Icon className="h-5 w-5" />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-bold text-[#2c2723] dark:text-[#f4eee8]">{file.name}</p>
+        <p className="mt-0.5 text-[10px] text-[#8f8175] dark:text-[#aea39b]">{formatFileSize(file.size)}</p>
+      </div>
+      <button
+        onClick={onRemove}
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-black/[0.05] text-[#817368] transition-all hover:bg-red-500 hover:text-white dark:bg-white/[0.08] dark:text-[#cfc4bb]"
+        aria-label="إزالة الملف"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  )
 }
 
 export default function MessageInput({ onSend, disabled }) {
@@ -56,7 +92,7 @@ export default function MessageInput({ onSend, disabled }) {
     setMessage('')
     setFiles([])
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = '48px'
     }
   }
 
@@ -71,8 +107,8 @@ export default function MessageInput({ onSend, disabled }) {
     setMessage(e.target.value)
     const el = textareaRef.current
     if (el) {
-      el.style.height = 'auto'
-      el.style.height = Math.min(el.scrollHeight, 200) + 'px'
+      el.style.height = '48px'
+      el.style.height = Math.min(el.scrollHeight, 170) + 'px'
     }
   }
 
@@ -80,112 +116,79 @@ export default function MessageInput({ onSend, disabled }) {
     setFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  const canSend = (message.trim() || files.length > 0) && !disabled
+
   return (
-    <div
-      {...getRootProps()}
-      className={clsx(
-        'dropzone px-4 py-3 m-4 mt-0',
-        isDragActive && 'dropzone-active'
-      )}
-    >
-      <input {...getInputProps()} />
+    <div className="relative z-20 px-3 pb-[max(14px,env(safe-area-inset-bottom))] pt-2 md:px-5">
+      <div
+        {...getRootProps()}
+        className={clsx(
+          'relative mx-auto max-w-4xl rounded-[30px] border border-black/[0.06] bg-white/[0.72] p-2 shadow-[0_16px_44px_rgba(71,47,31,0.12)] backdrop-blur-2xl transition-all dark:border-white/[0.10] dark:bg-[#2a2520]/[0.82] dark:shadow-black/20',
+          isDragActive && 'ring-2 ring-[#d97757]/70'
+        )}
+      >
+        <input {...getInputProps()} />
 
-      {/* Drag overlay */}
-      {isDragActive && (
-        <div className="absolute inset-0 flex items-center justify-center bg-claude-surface/95 dark:bg-claude-surface/95 light:bg-light-surface/95 rounded-xl border-2 border-dashed border-claude-accent z-10">
-          <div className="flex flex-col items-center gap-2 text-claude-accent">
-            <Upload className="w-8 h-8" />
-            <span className="text-sm font-medium">أفلت الملفات هنا</span>
+        {isDragActive && (
+          <div className="absolute inset-0 z-10 grid place-items-center rounded-[30px] border-2 border-dashed border-[#d97757] bg-[#fbf7f1]/90 backdrop-blur-xl dark:bg-[#211d19]/[0.92]">
+            <div className="flex flex-col items-center gap-2 text-[#d97757]">
+              <Paperclip className="h-8 w-8" />
+              <span className="text-sm font-bold">أفلت الملفات هنا</span>
+            </div>
           </div>
+        )}
+
+        {files.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
+            {files.map((file, i) => (
+              <FilePreview key={`${file.name}-${i}`} file={file} onRemove={() => removeFile(i)} />
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-end gap-2">
+          <button
+            onClick={open}
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-black/[0.04] text-[#6f6258] transition-all hover:scale-105 hover:bg-black/[0.08] active:scale-95 dark:bg-white/[0.07] dark:text-[#cfc4bb] dark:hover:bg-white/[0.11]"
+            title="رفع ملف"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="اسألني أي شيء..."
+            className="auto-resize min-h-12 flex-1 resize-none rounded-[22px] border-0 bg-transparent px-2 py-3 text-[15px] leading-6 text-[#2c2723] outline-none placeholder:text-[#9b8e83] disabled:opacity-60 dark:text-[#f4eee8] dark:placeholder:text-[#8d827a]"
+            rows={1}
+            disabled={disabled}
+          />
+
+          <button
+            onClick={handleSend}
+            disabled={!canSend}
+            className={clsx(
+              'grid h-12 w-12 shrink-0 place-items-center rounded-full shadow-lg transition-all active:scale-95',
+              canSend
+                ? 'bg-[#2c2723] text-white shadow-black/[0.15] hover:scale-105 dark:bg-[#f2e9df] dark:text-[#2c2723]'
+                : 'bg-black/[0.04] text-[#a79a8e] shadow-none dark:bg-white/[0.06] dark:text-[#70675f]'
+            )}
+            title="إرسال"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </button>
         </div>
-      )}
 
-      {/* File previews */}
-      {files.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
-          {files.map((file, i) => {
-            const Icon = getFileIcon(file.type)
-            const isImage = file.type?.startsWith('image/')
-            return (
-              <div
-                key={i}
-                className="relative flex items-center gap-2 bg-claude-surface2 dark:bg-claude-surface2 light:bg-light-surface2 rounded-lg px-3 py-2 pr-8 group"
-              >
-                {isImage ? (
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    className="w-8 h-8 rounded object-cover"
-                  />
-                ) : (
-                  <Icon className="w-5 h-5 text-claude-accent flex-shrink-0" />
-                )}
-                <div className="flex flex-col">
-                  <span className="text-xs text-claude-text dark:text-claude-text light:text-light-text max-w-32 truncate">
-                    {file.name}
-                  </span>
-                  <span className="text-[10px] text-claude-textMuted">
-                    {formatFileSize(file.size)}
-                  </span>
-                </div>
-                <button
-                  onClick={() => removeFile(i)}
-                  className="absolute top-1 left-1 p-0.5 rounded hover:bg-claude-accent/20"
-                >
-                  <X className="w-3 h-3 text-claude-textMuted" />
-                </button>
-              </div>
-            )
-          })}
+        <div className="flex items-center justify-between px-3 pb-1 pt-1.5">
+          <span className="text-[10px] font-medium text-[#9b8e83] dark:text-[#81766d]">
+            Enter للإرسال · Shift+Enter لسطر جديد
+          </span>
+          <span className="text-[10px] font-bold text-[#d97757]">
+            {files.length > 0 ? `${files.length} ملف` : 'كل الملفات مدعومة'}
+          </span>
         </div>
-      )}
-
-      {/* Input row */}
-      <div className="flex items-end gap-2">
-        <button
-          onClick={open}
-          className="p-2.5 rounded-xl bg-claude-surface2 dark:bg-claude-surface2 light:bg-light-surface2 hover:bg-claude-accent/20 transition-all-smooth flex-shrink-0"
-          title="رفع ملف"
-        >
-          <Upload className="w-5 h-5 text-claude-textMuted" />
-        </button>
-
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder="اكتب رسالتك هنا... (Enter للإرسال، Shift+Enter لسطر جديد)"
-          className="auto-resize flex-1 bg-claude-surface2 dark:bg-claude-surface2 light:bg-light-surface2 text-claude-text dark:text-claude-text light:text-light-text rounded-xl px-4 py-2.5 resize-none outline-none text-sm placeholder:text-claude-textMuted border border-claude-border dark:border-claude-border light:border-light-border focus:border-claude-accent transition-all-smooth"
-          rows={1}
-          disabled={disabled}
-        />
-
-        <button
-          onClick={handleSend}
-          disabled={(!message.trim() && files.length === 0) || disabled}
-          className={clsx(
-            'p-2.5 rounded-xl transition-all-smooth flex-shrink-0',
-            (!message.trim() && files.length === 0) || disabled
-              ? 'bg-claude-surface2 dark:bg-claude-surface2 light:bg-light-surface2 text-claude-textMuted cursor-not-allowed'
-              : 'bg-claude-accent hover:bg-claude-accentHover text-white'
-          )}
-          title="إرسال"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.527-18.162a.5.5 0 0 0-.624-.624L3.214 9.403a.5.5 0 0 0-.024.937l7.99 4.079z"/>
-            <path d="m21.85 3.15-9.67 9.67"/>
-          </svg>
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between mt-2 px-1">
-        <span className="text-[11px] text-claude-textMuted">
-          يدعم جميع أنواع الملفات · صور، PDF، كود، مستندات، Excel، وأكثر
-        </span>
-        <span className="text-[11px] text-claude-textMuted">
-          {files.length > 0 && `${files.length} ملف مرفق`}
-        </span>
       </div>
     </div>
   )
