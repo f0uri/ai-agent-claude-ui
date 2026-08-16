@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ai-agent-claude-ui
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: CORS_ORIGIN
+        value: '*'

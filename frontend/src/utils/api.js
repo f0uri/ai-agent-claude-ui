@@ -1,7 +1,14 @@
 // API configuration - works on both web and mobile (APK)
 import { Capacitor } from '@capacitor/core'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://your-backend-url.com/api'
+// Auto-detect API URL:
+// 1. VITE_API_URL env var (set at build time)
+// 2. Relative URL (same origin - for Docker/Render deployment)
+// 3. localhost for dev
+const API_BASE = import.meta.env.VITE_API_URL || 
+  (Capacitor.isNativePlatform() 
+    ? 'https://ai-agent-claude-ui.onrender.com/api'  // Default Render URL for mobile
+    : '/api')  // Relative URL for same-origin deployment
 
 // Detect if running as native app
 export const isNative = Capacitor.isNativePlatform()
@@ -43,7 +50,7 @@ export async function sendChatMessage({ message, files, history }) {
       message,
       files: files || [],
       history: history || [],
-    }),
+    },
   })
 
   if (!response.ok) {

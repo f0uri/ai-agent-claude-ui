@@ -161,6 +161,18 @@ app.get('/api/file-types', (req, res) => {
   })
 })
 
+// ===== Serve Frontend (Production) =====
+const publicDir = path.join(__dirname, 'public')
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir))
+  // SPA fallback - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/')) {
+      res.sendFile(path.join(publicDir, 'index.html'))
+    }
+  })
+}
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err)
@@ -174,7 +186,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 AI Agent API running on http://localhost:${PORT}`)
+  console.log(`🚀 AI Agent API running on port ${PORT}`)
   console.log(`📁 Upload directory: ${uploadDir}`)
   console.log(`🤖 AI Model: ${process.env.OPENAI_MODEL || 'gpt-4o'}`)
+  if (fs.existsSync(publicDir)) {
+    console.log(`🌐 Frontend: serving from ${publicDir}`)
+  }
 })
