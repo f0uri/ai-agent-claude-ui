@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, File as FileIcon, X, Image as ImageIcon, FileText, FileCode, FileArchive, FileSpreadsheet, FilePresentation } from 'lucide-react'
+import { Upload, File as FileIcon, X, Image as ImageIcon, FileText, FileCode, FileArchive, FileSpreadsheet, Presentation } from 'lucide-react'
 import clsx from 'clsx'
 
 const FILE_ICONS = {
@@ -13,8 +13,8 @@ const FILE_ICONS = {
   'application/x-7z': FileArchive,
   'application/vnd.ms-excel': FileSpreadsheet,
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': FileSpreadsheet,
-  'application/vnd.ms-powerpoint': FilePresentation,
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': FilePresentation,
+  'application/vnd.ms-powerpoint': Presentation,
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': Presentation,
   'text/javascript': FileCode,
   'text/html': FileCode,
   'text/css': FileCode,
